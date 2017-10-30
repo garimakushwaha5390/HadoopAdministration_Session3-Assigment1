@@ -1,0 +1,548 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf820
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww28600\viewh17520\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 \
+\
+\
+
+\fs30 \
+\
+1)	Take a clone of the machine previously launched, either on VMware or Oracle Virtualbox\
+2)	Edit the following files to make the VM ready\
+\
+	a) vi /etc/sysconfig/network\
+NETWORKING=yes\
+HOSTNAME=h1nn\
+	b) rm -rf /etc/udev/rules.d/70-persistent-net.rules\
+	c) vim /etc/sysconfig/network-scripts/ifcfg-eth0\
+DEVICE=eth0\
+TYPE=Ethernet\
+ONBOOT=yes\
+NM_CONTROLLED=no\
+BOOTPROTO=static\
+IPADDR=192.168.0.31\
+NETMASK=255.255.255.0\
+GATEWAY=192.168.0.1\
+	d) remove existing hadoop user if any, userdel -r hadoop\
+	e) [root@h1nn ~]# vi /etc/hosts\
+127.0.0.1	localhost\
+192.168.0.31	h1nn	localhost\
+[root@h1nn ~]# \
+\
+	\
+3)	Create the hadoop user\
+\
+useradd hadoop\
+echo "root123" | passwd hadoop --stdin\
+\
+4)	mv hadoop-1.2.1.tar.gz /home/hadoop/\
+mv jdk-7u79-linux-x64.gz /home/hadoop/\
+\
+\
+5)	chown hadoop:hadoop /home/hadoop/*\
+\
+6)	[root@h1nn ~]# su - hadoop\
+[hadoop@h1nn ~]$ ll\
+total 212272\
+-rwxr-xr-x. 1 hadoop hadoop  63851630 Jul 29 09:18 hadoop-1.2.1.tar.gz\
+-rwxr-xr-x. 1 hadoop hadoop 153512879 Jul 29 09:19 jdk-7u79-linux-x64.gz\
+[hadoop@h1nn ~]$ \
+[hadoop@h1nn ~]$ \
+[hadoop@h1nn ~]$ \
+[hadoop@h1nn ~]$ tar -xvzf hadoop-1.2.1.tar.gz ; tar -xvzf jdk-7u79-linux-x64.gz \
+\
+7)	[hadoop@h1nn ~]$ ln -s hadoop-1.2.1 hadoop\
+[hadoop@h1nn ~]$ ll\
+total 212280\
+lrwxrwxrwx.  1 hadoop hadoop        12 Jul 29 09:25 hadoop -> hadoop-1.2.1\
+drwxr-xr-x. 15 hadoop hadoop      4096 Jul 23  2013 hadoop-1.2.1\
+-rwxr-xr-x.  1 hadoop hadoop  63851630 Jul 29 09:18 hadoop-1.2.1.tar.gz\
+drwxr-xr-x.  8 hadoop hadoop      4096 Apr 11  2015 jdk1.7.0_79\
+-rwxr-xr-x.  1 hadoop hadoop 153512879 Jul 29 09:19 jdk-7u79-linux-x64.gz\
+[hadoop@h1nn ~]$ \
+[hadoop@h1nn ~]$ ln -s jdk1.7.0_79 java\
+[hadoop@h1nn ~]$ ll\
+total 212280\
+lrwxrwxrwx.  1 hadoop hadoop        12 Jul 29 09:25 hadoop -> hadoop-1.2.1\
+drwxr-xr-x. 15 hadoop hadoop      4096 Jul 23  2013 hadoop-1.2.1\
+-rwxr-xr-x.  1 hadoop hadoop  63851630 Jul 29 09:18 hadoop-1.2.1.tar.gz\
+lrwxrwxrwx.  1 hadoop hadoop        11 Jul 29 09:25 java -> jdk1.7.0_79\
+drwxr-xr-x.  8 hadoop hadoop      4096 Apr 11  2015 jdk1.7.0_79\
+-rwxr-xr-x.  1 hadoop hadoop 153512879 Jul 29 09:19 jdk-7u79-linux-x64.gz\
+[hadoop@h1nn ~]$ \
+\
+\
+\
+\
+\
+8)	[hadoop@h1nn ~]$ vi .bash_profile \
+# .bash_profile\
+\
+# Get the aliases and functions\
+if [ -f ~/.bashrc ]; then\
+	. ~/.bashrc\
+fi\
+\
+# User specific environment and startup programs\
+\
+\
+export HADOOP_HOME=/home/hadoop/hadoop/\
+export JAVA_HOME=/home/hadoop/java\
+\
+PATH=$PATH:$HOME/bin:$HADOOP_HOME:$HADOOP_HOME/bin:$JAVA_HOME:$JAVA_HOME/bin\
+\
+export PATH\
+[hadoop@h1nn ~]$ \
+\
+\
+9)	[hadoop@h1nn ~]$ source .bash_profile\
+\
+\
+10)	with root user configure the /etc/hosts file:-\
+\
+[root@h1nn ~]# cat /etc/hosts\
+127.0.0.1	localhost\
+192.168.0.31	h1nn\
+192.168.0.32	h1snn\
+192.168.0.33	h1jt\
+192.168.0.34	h1dn1\
+192.168.0.35	h1dn2\
+192.168.0.36	h1dn3\
+[root@h1nn ~]# \
+\
+\
+\
+\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+\
+Configurations begin:\
+\
+All configurations need to be copied to all machines in the cluster\
+\
+\
+1) HADOOP-ENV.SH\
+\
+vim hadoop/conf/hadoop-env.sh \
+export JAVA_HOME=/home/hadoop/java     #\'97> edit this in the file and mention the java home\
+\
+\
+1)	CORE-SITE.XML \'97\'97> this file needs to be copied to all the nodes in the cluster\
+\
+[hadoop@h1nn ~]$ vim hadoop/conf/core-site.xml \
+<?xml version="1.0"?>\
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>\
+\
+<!-- Put site-specific property overrides in this file. -->\
+\
+<configuration>\
+\
+<property>\
+<name>fs.default.name</name>\
+<value>hdfs://h1nn:8020</value>\
+<description>URI where clients/remote users can connect to hdfs</description>\
+</property>\
+\
+</configuration>\
+[hadoop@h1nn ~]$ \
+\
+\
+2)	HDFS-SITE.XML  \'97\'97> copy this file to all machines\
+\
+[hadoop@h1nn ~]$ vim hadoop/conf/hdfs-site.xml \
+<?xml version="1.0"?>\
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>\
+\
+<!-- Put site-specific property overrides in this file. -->\
+\
+<configuration>\
+\
+<property>\
+<name>dfs.name.dir</name>\
+<value>/home/hadoop/data/nn</value>\
+</property>\
+\
+<property>\
+<name>dfs.data.dir</name>\
+<value>/home/hadoop/data/dn</value>\
+</property>\
+\
+<property>\
+<name>dfs.replication</name>\
+<value>3</value>\
+</property>\
+\
+<property>\
+<name>dfs.blocksize</name>\
+<value>134217728</value>\
+</property>\
+\
+</configuration>\
+[hadoop@h1nn ~]$ \
+\
+\
+3)	MAPRED-SITE.XML \'97> copy to all nodes\
+\
+[hadoop@h1nn ~]$ vim hadoop/conf/mapred-site.xml \
+<?xml version="1.0"?>\
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>\
+\
+<!-- Put site-specific property overrides in this file. -->\
+\
+<configuration>\
+\
+<property>\
+<name>mapred.job.tracker</name>\
+<value>h1jt:8021</value>\
+</property>\
+\
+<property>\
+<name>mapred.tasktracker.map.tasks.maximum</name>\
+<value>3</value>\
+</property>\
+\
+<property>\
+<name>mapred.tasktracker.reduce.tasks.maximum</name>\
+<value>3</value>\
+</property>\
+\
+</configuration>\
+[hadoop@h1nn ~]$ \
+\
+\
+4)	SLAVES file:-\
+\
+\
+[hadoop@h1nn ~]$ vim hadoop/conf/slaves \
+h1dn1\
+h1dn2\
+h1dn3\
+[hadoop@h1nn ~]$ \
+ \
+\
+5)	MASTERS file:-\
+\
+\
+[hadoop@h1nn ~]$ cat hadoop/conf/masters \
+h1snn\
+[hadoop@h1nn ~]$ \
+\
+\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+\
+Configure the password less ssh from h1nn to all other nodes:-\
+\
+Generate the ssh key if not already present (only hit enter upon the prompt when following command is issued)\
+\
+[hadoop@h1nn ~]$ ssh-keygen -t rsa\
+Generating public/private rsa key pair.\
+Enter file in which to save the key (/home/hadoop/.ssh/id_rsa): \
+/home/hadoop/.ssh/id_rsa created\
+Enter passphrase (empty for no passphrase): \
+Enter same passphrase again: \
+Your identification has been saved in /home/hadoop/.ssh/id_rsa.\
+Your public key has been saved in /home/hadoop/.ssh/id_rsa.pub.\
+The key fingerprint is:\
+20:bc:d6:39:4d:ac:86:f9:64:b8:9a:6e:5e:08:22:b8 hadoop@h1jt\
+The key's randomart image is:\
++--[ RSA 2048]----+\
+|                 |\
+|   .   .         |\
+|    o . o        |\
+|.    B *         |\
+|=   * O S        |\
+|oo o * .         |\
+|E . o .          |\
+|  .+             |\
+| +=              |\
++-----------------+\
+[hadoop@h1nn ~]$ cd .ssh/\
+[hadoop@h1nn .ssh]$ ll\
+total 16\
+-rw-------. 1 hadoop hadoop  786 Jul 29 10:19 authorized_keys\
+-rw-------. 1 hadoop hadoop 1675 Jul 29 12:47 id_rsa\
+-rw-r--r--. 1 hadoop hadoop  393 Jul 29 12:47 id_rsa.pub\
+-rw-r--r--. 1 hadoop hadoop 1998 Jul 29 10:28 known_hosts\
+[hadoop@h1nn .ssh]$ \
+\
+\
+\
+\
+[hadoop@h1nn ~]$ for i in 31 32 33 34 35 36; do ssh-copy-id -i .ssh/id_rsa.pub 192.168.0.$i ; done\
+\
+\
+\
+\
+\
+\
+Now from the name node do the following:-\
+\
+[hadoop@h1nn ~]$ hadoop namenode -format\
+Warning: $HADOOP_HOME is deprecated.\
+\
+17/07/29 10:24:22 INFO namenode.NameNode: STARTUP_MSG: \
+/************************************************************\
+STARTUP_MSG: Starting NameNode\
+STARTUP_MSG:   host = h1nn/192.168.0.31\
+STARTUP_MSG:   args = [-format]\
+STARTUP_MSG:   version = 1.2.1\
+STARTUP_MSG:   build = https://svn.apache.org/repos/asf/hadoop/common/branches/branch-1.2 -r 1503152; compiled by 'mattf' on Mon Jul 22 15:23:09 PDT 2013\
+STARTUP_MSG:   java = 1.7.0_79\
+************************************************************/\
+17/07/29 10:24:22 INFO util.GSet: Computing capacity for map BlocksMap\
+17/07/29 10:24:22 INFO util.GSet: VM type       = 64-bit\
+17/07/29 10:24:22 INFO util.GSet: 2.0% max memory = 1013645312\
+17/07/29 10:24:22 INFO util.GSet: capacity      = 2^21 = 2097152 entries\
+17/07/29 10:24:22 INFO util.GSet: recommended=2097152, actual=2097152\
+17/07/29 10:24:22 INFO namenode.FSNamesystem: fsOwner=hadoop\
+17/07/29 10:24:22 INFO namenode.FSNamesystem: supergroup=supergroup\
+17/07/29 10:24:22 INFO namenode.FSNamesystem: isPermissionEnabled=true\
+17/07/29 10:24:22 INFO namenode.FSNamesystem: dfs.block.invalidate.limit=100\
+17/07/29 10:24:22 INFO namenode.FSNamesystem: isAccessTokenEnabled=false accessKeyUpdateInterval=0 min(s), accessTokenLifetime=0 min(s)\
+17/07/29 10:24:22 INFO namenode.FSEditLog: dfs.namenode.edits.toleration.length = 0\
+17/07/29 10:24:22 INFO namenode.NameNode: Caching file names occuring more than 10 times \
+17/07/29 10:24:23 INFO common.Storage: Image file /home/hadoop/data/nn/current/fsimage of size 112 bytes saved in 0 seconds.\
+17/07/29 10:24:23 INFO namenode.FSEditLog: closing edit log: position=4, editlog=/home/hadoop/data/nn/current/edits\
+17/07/29 10:24:23 INFO namenode.FSEditLog: close success: truncate to 4, editlog=/home/hadoop/data/nn/current/edits\
+17/07/29 10:24:23 INFO common.Storage: Storage directory /home/hadoop/data/nn has been successfully formatted.    #####
+\b important message to be looked for
+\b0 \
+17/07/29 10:24:23 INFO namenode.NameNode: SHUTDOWN_MSG: \
+/************************************************************\
+SHUTDOWN_MSG: Shutting down NameNode at h1nn/192.168.0.31\
+************************************************************/\
+[hadoop@h1nn ~]$ \
+\
+\
+data folder would get created\
+\
+[hadoop@h1nn ~]$ ll\
+total 212288\
+drwxrwxr-x   3 hadoop hadoop      4096 Jul 29 10:24 data\
+lrwxrwxrwx.  1 hadoop hadoop        12 Jul 29 09:25 hadoop -> hadoop-1.2.1\
+drwxr-xr-x. 16 hadoop hadoop      4096 Jul 29 09:56 hadoop-1.2.1\
+-rwxr-xr-x.  1 hadoop hadoop  63851630 Jul 29 09:18 hadoop-1.2.1.tar.gz\
+drwxrwxr-x.  2 hadoop hadoop      4096 Jul 29 10:01 input\
+lrwxrwxrwx.  1 hadoop hadoop        11 Jul 29 09:25 java -> jdk1.7.0_79\
+drwxr-xr-x.  8 hadoop hadoop      4096 Apr 11  2015 jdk1.7.0_79\
+-rwxr-xr-x.  1 hadoop hadoop 153512879 Jul 29 09:19 jdk-7u79-linux-x64.gz\
+[hadoop@h1nn ~]$  cd data/\
+[hadoop@h1nn data]$ ll\
+total 4\
+drwxrwxr-x 4 hadoop hadoop 4096 Jul 29 10:24 nn\
+\
+[hadoop@h1nn ~]$ start-dfs.sh \
+Warning: $HADOOP_HOME is deprecated.\
+\
+starting namenode, logging to /home/hadoop/hadoop-1.2.1/libexec/../logs/hadoop-hadoop-namenode-h1nn.out\
+h1dn1: starting datanode, logging to /home/hadoop/hadoop-1.2.1/libexec/../logs/hadoop-hadoop-datanode-h1dn1.out\
+h1dn3: starting datanode, logging to /home/hadoop/hadoop-1.2.1/libexec/../logs/hadoop-hadoop-datanode-h1dn3.out\
+h1dn2: starting datanode, logging to /home/hadoop/hadoop-1.2.1/libexec/../logs/hadoop-hadoop-datanode-h1dn2.out\
+h1snn: starting secondarynamenode, logging to /home/hadoop/hadoop-1.2.1/libexec/../logs/hadoop-hadoop-secondarynamenode-h1snn.out\
+[hadoop@h1nn ~]$ jps\
+1763 NameNode\
+1899 Jps\
+\
+\
+\
+\
+Check the output for all the machines using following command:-\
+\
+\
+[hadoop@h1nn ~]$ for i in h1nn h1jt h1dn1 h1snn h1dn2 h1dn3 ; do ssh $i "uname -n ; echo ; ~/java/bin/jps ; echo -------------"; done\
+h1nn\
+\
+1763 NameNode\
+1934 Jps\
+-------------\
+h1jt\
+\
+1405 Jps\
+-------------\
+h1dn1\
+\
+1511 Jps\
+1395 DataNode\
+-------------\
+h1snn\
+\
+1510 Jps\
+1448 SecondaryNameNode\
+-------------\
+h1dn2\
+\
+1472 Jps\
+1394 DataNode\
+-------------\
+h1dn3\
+\
+1392 DataNode\
+1470 Jps\
+-------------\
+[hadoop@h1nn ~]$ \
+\
+\
+Now start the mapred services:-\
+\
+\
+Go to the h1jt machine and then only fire the following command:-\
+\
+\
+[hadoop@h1jt ~]$ start-mapred.sh \
+\
+\
+\
+Check the o/p on the h1nn:-\
+\
+\
+[hadoop@h1nn ~]$ for i in h1nn h1jt h1dn1 h1snn h1dn2 h1dn3 ; do ssh $i "uname -n ; echo ; ~/java/bin/jps ; echo -------------"; done\
+h1nn\
+\
+1763 NameNode\
+1971 Jps\
+-------------\
+h1jt\
+\
+1646 Jps\
+1517 JobTracker\
+-------------\
+h1dn1\
+\
+1694 Jps\
+1395 DataNode\
+1606 TaskTracker\
+-------------\
+h1snn\
+\
+1448 SecondaryNameNode\
+1539 Jps\
+-------------\
+h1dn2\
+\
+1544 TaskTracker\
+1632 Jps\
+1394 DataNode\
+-------------\
+h1dn3\
+\
+1630 Jps\
+1541 TaskTracker\
+1392 DataNode\
+-------------\
+[hadoop@h1nn ~]$ \
+\
+\
+Now to run the map reduce program:-\
+\
+\
+[hadoop@h1nn ~]$ cd input/\
+[hadoop@h1nn input]$ ll					### \'97> create these files and insert random words to be counted\
+total 20\
+-rw-rw-r--. 1 hadoop hadoop 19 Jul 29 10:00 file1\
+-rw-rw-r--. 1 hadoop hadoop 13 Jul 29 10:00 file2\
+-rw-rw-r--. 1 hadoop hadoop 14 Jul 29 10:00 file3\
+-rw-rw-r--. 1 hadoop hadoop 13 Jul 29 10:00 file4\
+-rw-rw-r--. 1 hadoop hadoop 15 Jul 29 10:01 file5\
+[hadoop@h1nn input]$ cd\
+[hadoop@h1nn ~]$ \
+[hadoop@h1nn ~]$ \
+[hadoop@h1nn ~]$ \
+[hadoop@h1nn ~]$ \
+[hadoop@h1nn ~]$ hadoop dfs -put input/ /input\
+Warning: $HADOOP_HOME is deprecated.\
+\
+[hadoop@h1nn ~]$ \
+[hadoop@h1nn ~]$ \
+[hadoop@h1nn ~]$ hadoop dfs -ls /\
+Warning: $HADOOP_HOME is deprecated.\
+\
+Found 2 items\
+drwxr-xr-x   - hadoop supergroup          0 2017-07-29 10:33 /input\
+drwxr-xr-x   - hadoop supergroup          0 2017-07-29 10:28 /tmp\
+[hadoop@h1nn ~]$ \
+\
+[hadoop@h1jt ~]$ hadoop jar hadoop/hadoop-examples-1.2.1.jar wordcount /input /ouput\
+Warning: $HADOOP_HOME is deprecated.\
+\
+17/07/29 10:35:15 INFO input.FileInputFormat: Total input paths to process : 5\
+17/07/29 10:35:15 INFO util.NativeCodeLoader: Loaded the native-hadoop library\
+17/07/29 10:35:15 WARN snappy.LoadSnappy: Snappy native library not loaded\
+17/07/29 10:35:15 INFO mapred.JobClient: Running job: job_201707291028_0001\
+17/07/29 10:35:16 INFO mapred.JobClient:  map 0% reduce 0%\
+17/07/29 10:35:25 INFO mapred.JobClient:  map 20% reduce 0%\
+17/07/29 10:35:26 INFO mapred.JobClient:  map 60% reduce 0%\
+17/07/29 10:35:27 INFO mapred.JobClient:  map 100% reduce 0%\
+17/07/29 10:35:33 INFO mapred.JobClient:  map 100% reduce 33%\
+17/07/29 10:35:35 INFO mapred.JobClient:  map 100% reduce 100%\
+17/07/29 10:35:36 INFO mapred.JobClient: Job complete: job_201707291028_0001\
+17/07/29 10:35:37 INFO mapred.JobClient: Counters: 29\
+17/07/29 10:35:37 INFO mapred.JobClient:   Job Counters \
+17/07/29 10:35:37 INFO mapred.JobClient:     Launched reduce tasks=1\
+17/07/29 10:35:37 INFO mapred.JobClient:     SLOTS_MILLIS_MAPS=27069\
+17/07/29 10:35:37 INFO mapred.JobClient:     Total time spent by all reduces waiting after reserving slots (ms)=0\
+17/07/29 10:35:37 INFO mapred.JobClient:     Total time spent by all maps waiting after reserving slots (ms)=0\
+17/07/29 10:35:37 INFO mapred.JobClient:     Launched map tasks=5\
+17/07/29 10:35:37 INFO mapred.JobClient:     Data-local map tasks=5\
+17/07/29 10:35:37 INFO mapred.JobClient:     SLOTS_MILLIS_REDUCES=9682\
+17/07/29 10:35:37 INFO mapred.JobClient:   File Output Format Counters \
+17/07/29 10:35:37 INFO mapred.JobClient:     Bytes Written=35\
+17/07/29 10:35:37 INFO mapred.JobClient:   FileSystemCounters\
+17/07/29 10:35:37 INFO mapred.JobClient:     FILE_BYTES_READ=166\
+17/07/29 10:35:37 INFO mapred.JobClient:     HDFS_BYTES_READ=539\
+17/07/29 10:35:37 INFO mapred.JobClient:     FILE_BYTES_WRITTEN=335847\
+17/07/29 10:35:37 INFO mapred.JobClient:     HDFS_BYTES_WRITTEN=35\
+17/07/29 10:35:37 INFO mapred.JobClient:   File Input Format Counters \
+17/07/29 10:35:37 INFO mapred.JobClient:     Bytes Read=74\
+17/07/29 10:35:37 INFO mapred.JobClient:   Map-Reduce Framework\
+17/07/29 10:35:37 INFO mapred.JobClient:     Map output materialized bytes=190\
+17/07/29 10:35:37 INFO mapred.JobClient:     Map input records=16\
+17/07/29 10:35:37 INFO mapred.JobClient:     Reduce shuffle bytes=190\
+17/07/29 10:35:37 INFO mapred.JobClient:     Spilled Records=30\
+17/07/29 10:35:37 INFO mapred.JobClient:     Map output bytes=138\
+17/07/29 10:35:37 INFO mapred.JobClient:     Total committed heap usage (bytes)=817713152\
+17/07/29 10:35:37 INFO mapred.JobClient:     CPU time spent (ms)=2290\
+17/07/29 10:35:37 INFO mapred.JobClient:     Combine input records=16\
+17/07/29 10:35:37 INFO mapred.JobClient:     SPLIT_RAW_BYTES=465\
+17/07/29 10:35:37 INFO mapred.JobClient:     Reduce input records=15\
+17/07/29 10:35:37 INFO mapred.JobClient:     Reduce input groups=5\
+17/07/29 10:35:37 INFO mapred.JobClient:     Combine output records=15\
+17/07/29 10:35:37 INFO mapred.JobClient:     Physical memory (bytes) snapshot=947372032\
+17/07/29 10:35:37 INFO mapred.JobClient:     Reduce output records=5\
+17/07/29 10:35:37 INFO mapred.JobClient:     Virtual memory (bytes) snapshot=4334374912\
+17/07/29 10:35:37 INFO mapred.JobClient:     Map output records=16\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+}
